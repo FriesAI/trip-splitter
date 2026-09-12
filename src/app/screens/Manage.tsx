@@ -18,6 +18,7 @@ import {
 import type { Id } from '../../domain/types.js';
 import { useApp } from '../state.js';
 import { Avatar, Empty, Sheet } from '../ui.js';
+import { ImportWizard } from './Import.js';
 
 function SquadEditor({
   squadId,
@@ -181,6 +182,7 @@ export function Manage(): JSX.Element {
   const [newName, setNewName] = useState('');
   const [squadOpen, setSquadOpen] = useState<{ id?: Id } | undefined>(undefined);
   const [householdOpen, setHouseholdOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 
   if (!snapshot) return <Empty title="No trip loaded" />;
@@ -219,6 +221,20 @@ export function Manage(): JSX.Element {
         <strong>Everyone here is an admin.</strong> Any member can add, edit or
         delete anything. Deletes are recoverable and every change is recorded, so
         that stays safe without permissions getting in the way.
+      </div>
+
+      <div className="section-title">Import a sheet</div>
+      <div className="card">
+        <div className="field">
+          <p className="muted" style={{ margin: '0 0 9px', fontSize: 13.5 }}>
+            Read a planning spreadsheet straight into a new trip — people, booked
+            items, participant subsets and all. It will ask who paid each item,
+            which is the one thing a sheet never records.
+          </p>
+          <button type="button" className="btn small" onClick={() => setImportOpen(true)}>
+            Import a spreadsheet
+          </button>
+        </div>
       </div>
 
       <div className="section-title">Invite link</div>
@@ -352,6 +368,7 @@ export function Manage(): JSX.Element {
         />
       ) : null}
       {householdOpen ? <HouseholdEditor onClose={() => setHouseholdOpen(false)} /> : null}
+      {importOpen ? <ImportWizard onClose={() => setImportOpen(false)} /> : null}
     </>
   );
 }

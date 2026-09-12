@@ -201,15 +201,22 @@ describe('saving, deleting and restoring', () => {
     const trip = await seedEuroTrip();
     const before = balancesFor((await loadTrip(trip.id)) ?? (() => { throw new Error(); })());
 
-    await saveExpense(draftOf(), 'MYR');
+    const saved = await saveExpense(draftOf(), 'MYR');
     const after = await loadTrip(trip.id);
     if (!after) throw new Error('reload failed');
 
     expect(after.expenses).toHaveLength(14);
     const balances = balancesFor(after);
     expect(sum([...balances.values()])).toBe(0);
-    // The payer is up by what the other two owe them.
-    expect((balances.get('member-KKM') ?? 0) - (before.get('member-KKM') ?? 0)).toBe(6_667);
+
+    // The payer is up by the whole bill less their own share. Which of the
+    // three absorbs the leftover sen rotates by expense id, so read the share
+    // rather than hard-coding a number that changes with a random uuid.
+    const myShare = saved.splits.find((s) => s.memberId === 'member-KKM')?.amountBaseMinor ?? 0;
+    expect([3_333, 3_334]).toContain(myShare);
+    expect((balances.get('member-KKM') ?? 0) - (before.get('member-KKM') ?? 0)).toBe(
+      10_000 - myShare,
+    );
   });
 
   it('hides a deleted expense but keeps it recoverable', async () => {

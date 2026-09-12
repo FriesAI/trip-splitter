@@ -33,7 +33,7 @@ and then chosen with a single tap.
 
 ## Status
 
-**Phase 2 complete: the app runs.** 149 tests. Open it and the real trip is
+**Phase 3 complete: the importer.** 201 tests. Open it and the real trip is
 already there — twelve people, thirteen booked items, RM 116,823.04.
 
 - [`docs/SPEC.md`](docs/SPEC.md) — the full build spec (read this first)
@@ -49,8 +49,8 @@ The spec defines 45 requirements with stable IDs (`EXP-01`, `NET-01`, `SMT-03`
 | `src/split.ts` | The four split modes, largest-remainder allocation, two-margin apportionment |
 | `src/balance.ts` | Debt edges, net positions, pairwise netting with its derivation |
 | `src/settle.ts` | Settlement minimisation, direct debts, household roll-up |
-| `src/domain/` | Types, the real trip data, the seed |
-| `src/data/` | IndexedDB store and the repository the UI talks to |
+| `src/domain/` | Types, the real trip data, the seed, the sheet parser |
+| `src/data/` | IndexedDB store, the repository, the importer |
 | `src/app/` | React screens — balances, expenses, editor, settle up, manage |
 | `db/schema.sql` | Postgres schema with RLS, ready for Phase 4 |
 
@@ -76,7 +76,9 @@ Phases are defined in [§13 of the spec](docs/SPEC.md#13-phases).
 2. ~~**Core app online**~~ — done. Multi-trip shell, all five split modes,
    netted balances with visible derivations, settle-up, squads, couples,
    soft deletes with an audit trail, the Postgres schema.
-3. **Sheet import** — the matrix importer and payer prompts.
+3. ~~**Sheet import**~~ — done. Reads a planning CSV into a new trip: people,
+   items, participant subsets, squads, payer prompts and a reconciliation
+   against the sheet's own totals.
 4. **Offline & PWA** — service worker, sync queue, the server half.
 
 ### What each phase found
@@ -97,11 +99,30 @@ Phases are defined in [§13 of the spec](docs/SPEC.md#13-phases).
   together on one line, in both the balance rows and the netting derivation.
   Inline spans where block elements were needed.
 
+**Phase 3**, testing the parser against a faithful copy of the real sheet:
+
+- `Car Rental (25/11-1/12)` parsed as **11 December**. The day-range pattern
+  matched `11-1/12` sitting between the two real dates, so a full two-date
+  range is now matched first.
+- Header detection needed two amounts per row to recognise a person, which
+  rejects any two-column sheet outright. It now takes the row directly above
+  the first person, so a banner row of date ranges can never be mistaken for
+  the header.
+- `Hótel Jökulsárlón` was filed as transport: the accent stopped `hotel`
+  matching, and an unanchored `kul` (for Kuala Lumpur) matched inside
+  Jö*kul*sárlón. Accents are stripped and airport codes matched whole.
+- A test of my own was flaky — it asserted who absorbs a leftover sen, which
+  rotates by expense id and so depended on a random uuid.
+
 ## Known gaps
 
 - **Nobody knows who paid the booked items.** `ASSUMED_PAYERS` in
-  `src/domain/euro-trip.ts` is a labelled placeholder, so the balances the app
-  shows are only as right as that guess. This is the one thing blocking real use.
+  `src/domain/euro-trip.ts` is a labelled placeholder, so the balances the
+  seeded trip shows are only as right as that guess. The importer asks for the
+  real answers; until somebody supplies them, this is what blocks real use.
+- The importer reads CSV and TSV, not XLSX. Google Sheets exports CSV in one
+  click, and a real XLSX reader is most of a megabyte in an app that has to
+  cold-start offline.
 - **Invite links only work on this device** until Phase 4 brings the server.
 - No receipt OCR, no offline service worker, no smart suggestions yet.
 
