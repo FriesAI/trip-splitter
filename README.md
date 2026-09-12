@@ -33,7 +33,8 @@ and then chosen with a single tap.
 
 ## Status
 
-**Phase 1 complete: the money engine.** 125 tests, no UI.
+**Phase 2 complete: the app runs.** 149 tests. Open it and the real trip is
+already there — twelve people, thirteen booked items, RM 116,823.04.
 
 - [`docs/SPEC.md`](docs/SPEC.md) — the full build spec (read this first)
 - [`docs/spec.html`](docs/spec.html) — the same spec as a standalone page
@@ -48,32 +49,39 @@ The spec defines 45 requirements with stable IDs (`EXP-01`, `NET-01`, `SMT-03`
 | `src/split.ts` | The four split modes, largest-remainder allocation, two-margin apportionment |
 | `src/balance.ts` | Debt edges, net positions, pairwise netting with its derivation |
 | `src/settle.ts` | Settlement minimisation, direct debts, household roll-up |
+| `src/domain/` | Types, the real trip data, the seed |
+| `src/data/` | IndexedDB store and the repository the UI talks to |
+| `src/app/` | React screens — balances, expenses, editor, settle up, manage |
+| `db/schema.sql` | Postgres schema with RLS, ready for Phase 4 |
 
 ## Getting started
 
 ```bash
 npm install
-npm test          # 125 tests
-npm run typecheck
-npm run check     # both
+npm run dev       # http://localhost:5173
+npm test          # 149 tests
+npm run check     # typecheck + tests
 ```
 
-```ts
-import { splitExpense, netBalances, pairwiseNet, settleUp } from './src/index.js';
-```
+The app runs entirely on your device. There is no server yet: the local
+IndexedDB store is the source of truth, which is the architecture the spec
+calls for anyway (§10) — Phase 4 adds sync behind the same interface. Nothing
+leaves the browser, and nothing needs configuring to try it.
 
 ## Build order
 
 Phases are defined in [§13 of the spec](docs/SPEC.md#13-phases).
 
-1. ~~**Money engine, headless**~~ — done. Integer arithmetic, all four split
-   modes including households, pairwise netting, balances, settlement
-   minimisation, tested against the real planning-sheet figures.
-2. **Core app online** — schema, multi-trip shell, invite links, the screens.
+1. ~~**Money engine, headless**~~ — done.
+2. ~~**Core app online**~~ — done. Multi-trip shell, all five split modes,
+   netted balances with visible derivations, settle-up, squads, couples,
+   soft deletes with an audit trail, the Postgres schema.
+3. **Sheet import** — the matrix importer and payer prompts.
+4. **Offline & PWA** — service worker, sync queue, the server half.
 
-### What Phase 1 found
+### What each phase found
 
-Writing the tests before the UI paid for itself twice:
+**Phase 1**, writing tests before any UI:
 
 - The spec's balance formula had the transfer signs inverted. Corrected in §6.
 - Apportioning a multi-payer bill row by row left one payer's column a sen over
@@ -82,6 +90,20 @@ Writing the tests before the UI paid for itself twice:
   (`allocateMatrix`).
 - The planning sheet's per-person totals are each one sen below the sum of their
   own line items — twelve sen across the group. Now pinned by a test.
+
+**Phase 2**, driving the built app in a real browser:
+
+- Two layout bugs that no unit test could see: name and subtitle running
+  together on one line, in both the balance rows and the netting derivation.
+  Inline spans where block elements were needed.
+
+## Known gaps
+
+- **Nobody knows who paid the booked items.** `ASSUMED_PAYERS` in
+  `src/domain/euro-trip.ts` is a labelled placeholder, so the balances the app
+  shows are only as right as that guess. This is the one thing blocking real use.
+- **Invite links only work on this device** until Phase 4 brings the server.
+- No receipt OCR, no offline service worker, no smart suggestions yet.
 
 ## Non-negotiables
 
