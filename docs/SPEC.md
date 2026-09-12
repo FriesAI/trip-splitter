@@ -289,9 +289,23 @@ parts, ties broken by member ID.
 - `sum(all member balances) == 0` for the trip.
 
 **Balance.** For each member:
-`net = Σ(paid) − Σ(owed) + Σ(transfers received) − Σ(transfers sent)`.
+`net = Σ(paid) − Σ(owed) + Σ(transfers sent) − Σ(transfers received)`.
 Positive means the group owes them. Pairwise netting is the same formula
 restricted to two people.
+
+Sending a transfer *raises* your net, because it is money leaving your pocket
+exactly as paying for an expense is. Owe someone RM 75, pay them RM 75, and
+−75 + 75 lands on zero. (Earlier drafts of this spec had these two signs the
+wrong way round; the Phase 1 test suite caught it.)
+
+**Apportioning across several payers.** When two people front one bill, each
+participant's share is divided between them in proportion to what each put
+down. That apportionment must be exact in *both* directions at once — every
+participant's row summing to what they owe, and every payer's column to what
+they paid. Rounding each row on its own satisfies only the rows: one payer wins
+every leftover minor unit and their column ends up over, which makes the figure
+shown between two people disagree with their headline balance by a sen. Use a
+two-margin integer allocation, not a per-row one.
 
 **Settlement minimisation.** Split members into creditors and debtors, then
 greedily match the largest creditor against the largest debtor, settling

@@ -33,33 +33,55 @@ and then chosen with a single tap.
 
 ## Status
 
-**Specification stage.** No application code yet.
+**Phase 1 complete: the money engine.** 125 tests, no UI.
 
 - [`docs/SPEC.md`](docs/SPEC.md) — the full build spec (read this first)
 - [`docs/spec.html`](docs/spec.html) — the same spec as a standalone page
+- [`src/`](src) — the engine
 
 The spec defines 45 requirements with stable IDs (`EXP-01`, `NET-01`, `SMT-03`
 …), so commits and issues can cite them directly.
 
+| Module | What it owns |
+|---|---|
+| `src/money.ts` | Minor units, parsing, formatting, currency decimals, FX conversion |
+| `src/split.ts` | The four split modes, largest-remainder allocation, two-margin apportionment |
+| `src/balance.ts` | Debt edges, net positions, pairwise netting with its derivation |
+| `src/settle.ts` | Settlement minimisation, direct debts, household roll-up |
+
 ## Getting started
 
-Nothing to install yet. When Phase 1 begins:
-
 ```bash
-cp .env.example .env    # then fill in your own credentials
 npm install
-npm run dev
+npm test          # 125 tests
+npm run typecheck
+npm run check     # both
+```
+
+```ts
+import { splitExpense, netBalances, pairwiseNet, settleUp } from './src/index.js';
 ```
 
 ## Build order
 
-Phases are defined in [§13 of the spec](docs/SPEC.md#13-phases). The first one
-matters most:
+Phases are defined in [§13 of the spec](docs/SPEC.md#13-phases).
 
-1. **Money engine, headless** — integer arithmetic, all four split modes
-   including households, pairwise netting, balance computation, settlement
-   minimisation. Unit-tested against real figures *before any UI exists*.
-   If the maths is wrong, nothing else matters.
+1. ~~**Money engine, headless**~~ — done. Integer arithmetic, all four split
+   modes including households, pairwise netting, balances, settlement
+   minimisation, tested against the real planning-sheet figures.
+2. **Core app online** — schema, multi-trip shell, invite links, the screens.
+
+### What Phase 1 found
+
+Writing the tests before the UI paid for itself twice:
+
+- The spec's balance formula had the transfer signs inverted. Corrected in §6.
+- Apportioning a multi-payer bill row by row left one payer's column a sen over
+  what they actually paid, so pairwise figures would have drifted from the
+  headline balance. Fixed with a two-margin integer allocation
+  (`allocateMatrix`).
+- The planning sheet's per-person totals are each one sen below the sum of their
+  own line items — twelve sen across the group. Now pinned by a test.
 
 ## Non-negotiables
 
