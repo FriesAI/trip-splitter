@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# build output
+dist/
+build/
+.vite/
+
+# environment — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+# local data
+*.db
+*.sqlite
+*.sqlite3
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# receipts and vouchers must never be committed — they contain
+# card digits, booking references and personal names
+receipts/
+vouchers/
+private/
